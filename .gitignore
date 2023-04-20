@@ -1,0 +1,6 @@
+bin/
+obj/
+.vscode/
+properties/
+appsettings.json
+appsettings.Development.json
