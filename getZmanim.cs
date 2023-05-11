@@ -1,41 +1,90 @@
 using Newtonsoft.Json.Linq;
 
-namespace WeatherApi;
+namespace ZmanimApi;
 
 public class GetZmanim
 {
-    public GetZmanim(double lat, double lon)
+
+    private readonly HttpClient _httpClient;
+
+    public GetZmanim(HttpClient httpClient)
     {
-        this.Latitude = lat;
-        this.Longitude = lon;
+        _httpClient = httpClient;
     }
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
 
-    public async Task<Zmanim> TodaysZmanim()
+    public async Task<Response> GetTodaysInfo(string address, string apiKey)
     {
-        string url = $"https://api.sunrise-sunset.org/json?lat={Latitude}&lng={Longitude}";
+        Response response =new Response();
 
-        var httpClient = new HttpClient();
-        HttpResponseMessage response = await httpClient.GetAsync(url);
+        response.Results.Location = await GetLocationDetails(address,apiKey);
+        var zmanim = await GetTodaysZmanim(response.Results.Location.Latitude, response.Results.Location.Longitude);
+        response.Results.Zmanim = zmanim.ToStrings();
+        response.Status = 200;
+
+        return response;
+    }
+
+    public async Task<Location> GetLocationDetails(string address, string apiKey)
+    {
+        string url = $"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={apiKey}";
+
+        HttpResponseMessage response = await _httpClient.GetAsync(url);
 
         var json = await response.Content.ReadAsStringAsync();
         JObject o = JObject.Parse(json);
         Console.WriteLine(o.ToString());
 
         //get properties from JSON
-        string sunriseString = (string)o.SelectToken("results.sunrise")!;
-        string sunsetString = (string)o.SelectToken("results.sunset")!;
-        string dayDurationString = (string)o.SelectToken("results.day_length")!;
-
-        //Convert to Date Time / Timespan
-        var sunrise = DateTime.Parse(sunriseString).ToLocalTime();
-        var sunset = DateTime.Parse(sunsetString).ToLocalTime();
-        var dayDuration = TimeSpan.Parse(dayDurationString);
-
+        double latitude = (double)o.SelectToken("results[0].geometry.location.lat")!;
+        double longitude = (double)o.SelectToken("results[0].geometry.location.lng")!;
+        string formattedLocation = (string)o.SelectToken("results[0].formatted_address")!;
        
-        var zmanin = new Zmanim(sunrise, sunset, dayDuration);
+       Console.WriteLine(latitude);
+       Console.WriteLine(longitude);
+       Console.WriteLine(formattedLocation);
+        var location = new Location(latitude, longitude , formattedLocation);
+
+        return location;
+    }
+
+
+    public async Task<Zmanim> GetTodaysZmanim(double latitude, double longitude)
+    {
+        string url = $"https://api.sunrise-sunset.org/json?lat={latitude}&lng={longitude}";
+
+        HttpResponseMessage response = await _httpClient.GetAsync(url);
+
+        var json = await response.Content.ReadAsStringAsync();
+        JObject o = JObject.Parse(json);
+        Console.WriteLine(o.ToString());
+
+        //get properties from JSON
+        DateTime sunriseUtc = (DateTime)o.SelectToken("results.sunrise")!;
+        DateTime sunsetUtc = (DateTime)o.SelectToken("results.sunset")!;
+
+        DateTime sunrise = ConvertTimezone(sunriseUtc, "Eastern Standard Time");
+        DateTime sunset = ConvertTimezone(sunsetUtc, "Eastern Standard Time");
+       
+        var zmanin = new Zmanim(sunrise, sunset);
 
         return zmanin;
+    }
+
+    public DateTime ConvertTimezone (DateTime dateTime, string timeZone)
+    {
+        //get the number of milliseconds since 1970
+        DateTime now = DateTime.Now;
+        DateTimeOffset epoch = new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        long millisecsSince1970 = (long)(now - epoch).TotalMilliseconds;
+
+        var url = $"https://maps.googleapis.com/maps/api/timezone/json?location={39.6034810}%2C{-119.6822510}&timestamp={millisecsSince1970}&key={"YOUR_API_KEY"}";
+
+        //convert the date to the correct time zone
+        TimeZoneInfo utcZone = TimeZoneInfo.Utc;
+        TimeZoneInfo easternZone = TimeZoneInfo.FindSystemTimeZoneById(timeZone);
+        DateTime currentTimeZone = TimeZoneInfo.ConvertTime(dateTime, utcZone, easternZone);
+
+        return currentTimeZone;
+
     }
 }

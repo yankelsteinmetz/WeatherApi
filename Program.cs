@@ -1,42 +1,33 @@
-using WeatherApi;
+using Newtonsoft.Json;
+using ZmanimApi;
 
     var builder = WebApplication.CreateBuilder(args);
     builder.Configuration.AddJsonFile("appsettings.json");
+    builder.Services.AddSingleton<HttpClient>();
+
     var app = builder.Build();
 
     app.MapGet("/", () =>
     {
-        return "Hello World!";
+        var html = File.ReadAllText("./front-end/index.html");
+        return Microsoft.AspNetCore.Http.Results.Content(html, "text/html");
     });
 
-    app.MapGet("/{zipcode}/current", (string zipcode) =>
+    app.MapGet("/{zipcode}/current", async (string zipcode) =>
     {
-        try
-        {
-            string apiKey = app.Configuration["WeatherApiKey"];
-            var getWeather = new GetWeather(apiKey);
-            var currentWeather =  getWeather.CurrentWeather(zipcode).Result;
+        
+        string apiKey = app.Configuration["GoogleMapsApiKey"];
 
+        var getZmanim = new GetZmanim(app.Services.GetRequiredService<HttpClient>());
+        var response = await getZmanim.GetTodaysInfo(zipcode,apiKey);
+
+        return JsonConvert.SerializeObject(response);
     
-            var getZmanim = new GetZmanim(currentWeather.Latitude, currentWeather.Longitude);
-            var zmanim = getZmanim.TodaysZmanim().Result;
+    });
 
-
-            return $@"
-            {currentWeather.City}, {currentWeather.State} {zipcode}
-            Weather: {currentWeather.Description} {currentWeather.Temperture}° F
-            Sunrise: {zmanim.Sunrise.ToShortTimeString()}
-            Sunset: {zmanim.Sunset.ToShortTimeString()}
-            Sof Zman Krias Shema: {zmanim.SofZmanShema.ToShortTimeString()}
-            Magan Avraham: {zmanim.SofZmanShemaMa.ToShortTimeString()}
-            Sof Zman Tefilla: {zmanim.SofZmanTefilla.ToShortTimeString()}
-            Magan Avraham: {zmanim.SofZmanTefillaMa.ToShortTimeString()}"; 
-
-        }
-        catch
-        {
-            return "Sorry, location not found";
-        }
+    app.MapGet("/{anythingElse}", () =>
+    {
+        return "404 Page Not Found";
     });
     app.Run();
     
