@@ -6,10 +6,10 @@ public class Zmanim
     {
         this.Neitz = sunrise;
         this.Shkiah = sunset;
+        this.dayDuration =  CalculateDayDuration();
         this.Alos = CalculateAlos();
         this.RabeinuTaam = CalculateRabeinuTaam();
-        this.DayDuration =  CalculateDayDuration();
-        this.DayDurationMa =  CalculateDayDurationMa();
+        this.dayDurationMa =  CalculateDayDurationMa();
         this.SofZmanShema = CalculateZmanShema();
         this.SofZmanShemaMa = CalculateZmanShemaMa();
         this.SofZmanTefilla = CalculateZmanTefilla();
@@ -18,14 +18,15 @@ public class Zmanim
 
     public DateTime Alos { get; }
     public DateTime Neitz { get; }
-    public DateTime Shkiah { get; }
+    public DateTime Shkiah {get;}
     public DateTime SofZmanShema { get;}
     public DateTime SofZmanShemaMa { get;}
     public DateTime SofZmanTefilla { get; }
     public DateTime SofZmanTefillaMa { get; }
     public DateTime RabeinuTaam { get; }
-    private TimeSpan DayDuration;
-    private TimeSpan DayDurationMa;
+    private TimeSpan dayDuration;
+    private TimeSpan dayDurationMa;
+
 
     private TimeSpan CalculateDayDuration()
     {
@@ -37,22 +38,22 @@ public class Zmanim
     }
     private DateTime CalculateZmanShema()
     {
-        TimeSpan threeHours = DayDuration.Divide(4);
+        TimeSpan threeHours = dayDuration.Divide(4);
         return Neitz.Add(threeHours);
     }
     private DateTime CalculateZmanTefilla()
     {
-        TimeSpan fourHours = DayDuration.Divide(3);
+        TimeSpan fourHours = dayDuration.Divide(3);
         return Neitz.Add(fourHours);
     }
     private DateTime CalculateZmanShemaMa()
     {
-        TimeSpan threeHours = DayDurationMa.Divide(4);
+        TimeSpan threeHours = dayDurationMa.Divide(4);
         return Alos.Add(threeHours);
     }
     private DateTime CalculateZmanTefillaMa()
     {
-        TimeSpan fourHours = DayDurationMa.Divide(3);
+        TimeSpan fourHours = dayDurationMa.Divide(3);
         return Alos.Add(fourHours);
     }
     private DateTime CalculateRabeinuTaam()

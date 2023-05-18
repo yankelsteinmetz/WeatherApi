@@ -6,10 +6,12 @@ using ZmanimApi;
     builder.Services.AddSingleton<HttpClient>();
 
     var app = builder.Build();
+    app.UseStaticFiles("/wwwroot");
+
 
     app.MapGet("/", () =>
     {
-        var html = File.ReadAllText("./front-end/index.html");
+        var html = File.ReadAllText("./wwwroot/index.html");
         return Microsoft.AspNetCore.Http.Results.Content(html, "text/html");
     });
 
@@ -18,16 +20,16 @@ using ZmanimApi;
         
         string apiKey = app.Configuration["GoogleMapsApiKey"];
 
-        var getZmanim = new GetZmanim(app.Services.GetRequiredService<HttpClient>());
-        var response = await getZmanim.GetTodaysInfo(zipcode,apiKey);
+        var getZmanim = new GetZmanim(app.Services.GetRequiredService<HttpClient>(),apiKey);
+        var response = await getZmanim.GetTodaysInfo(zipcode);
 
-        return JsonConvert.SerializeObject(response);
+        return Results.Ok(response);
     
     });
 
     app.MapGet("/{anythingElse}", () =>
     {
-        return "404 Page Not Found";
+        Results.NotFound("404 Not Found");
     });
     app.Run();
     
