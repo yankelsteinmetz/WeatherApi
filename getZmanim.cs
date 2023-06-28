@@ -21,7 +21,7 @@ public class GetZmanim
         var timezoneOffset = await GetTimeZoneOffset(location, GetSecondsSince1970());
         var zmanim = await GetTodaysZmanim(location.Latitude,location.Longitude, timezoneOffset);
 
-        Response response = new Response{Location  = location, Zmanim = zmanim.ToStrings()};
+        Response response = new Response(location, zmanim.ToStrings());
 
         return response;
     }
